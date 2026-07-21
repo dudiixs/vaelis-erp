@@ -5,10 +5,11 @@ Um sistema ERP de alta performance, modular e multitenant desenvolvido em **Go**
 ---
 
 ## 🚀 Arquitetura & Tecnologias
-* **Linguagem**: Go (Golang) com o framework de alto desempenho **Fiber v2**.
+* **Backend (Core)**: Go (Golang) com o framework de alto desempenho **Fiber v2**.
+* **Frontend (SPA)**: React + TypeScript + Vite, estilizado com CSS Nativo (tema escuro HSL, micro-animações, design responsivo).
 * **Banco de Dados**: PostgreSQL com pool de conexões otimizado via **pgx/v5**.
 * **Mapeador Relacional**: **sqlc** para geração de código Go estritamente tipado a partir de queries SQL puras (sem sobrecarga de ORM).
-* **Segurança**: Autenticação **JWT** com suporte a controle de acesso baseado em papéis (**RBAC**) e isolamento físico/lógico multitenant por **Add-ons**.
+* **Segurança**: Autenticação **JWT** com suporte a controle de acesso baseado em papéis (**RBAC**), isolamento físico/lógico multitenant e login em duas etapas (validação de Tenant ID).
 * **Concorrência**: WebSocket assíncrono para o painel de cozinha (KDS) e concorrência segura com Mutex e Bloqueio Pessimista (`FOR UPDATE`) nas transações críticas de estoque.
 
 ---
@@ -58,10 +59,25 @@ Um sistema ERP de alta performance, modular e multitenant desenvolvido em **Go**
    ```bash
    docker-compose up -d
    ```
-4. Execute o servidor de desenvolvimento:
+4. Execute o servidor de desenvolvimento do backend:
    ```bash
    go run cmd/api/main.go
    ```
+
+### Inicialização do Frontend
+1. Navegue até o diretório do frontend:
+   ```bash
+   cd frontend
+   ```
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
+3. Execute o servidor de desenvolvimento do Vite:
+   ```bash
+   npm run dev
+   ```
+4. O painel estará disponível em `http://localhost:5173`.
 
 ---
 

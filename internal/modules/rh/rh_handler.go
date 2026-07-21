@@ -387,6 +387,33 @@ func (h *RHHandler) RegistrarPontoFacial(c *fiber.Ctx) error {
 		})
 	}
 
+	// 4. Validação de Geofencing (Ponto Georreferenciado)
+	if req.LocalizacaoGPS != "" {
+		parts := strings.Split(req.LocalizacaoGPS, ",")
+		if len(parts) == 2 {
+			lat, errLat := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+			lng, errLng := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+			if errLat == nil && errLng == nil {
+				// Coordenadas de referência da loja (Vaelis Matriz Mock)
+				refLat := -23.5505
+				refLng := -46.6333
+				// Calcular distância simplificada em metros (graus para metros ~ 111.000m)
+				dLat := lat - refLat
+				dLng := lng - refLng
+				dy := dLat * 111000.0
+				dx := dLng * 111000.0 * 0.91 // cos(-23.5) ~ 0.91
+				distSquare := dy*dy + dx*dx
+				
+				// Se a distância for maior que 200m (40000 m^2), retorna erro de geofence
+				if distSquare > 40000 {
+					return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+						"erro": fmt.Sprintf("Acesso Negado: Registro de ponto recusado. O colaborador está fora do perímetro autorizado de 200 metros (distância calculada: %.1fm).", float64(time.Duration(distSquare).Seconds())),
+					})
+				}
+			}
+		}
+	}
+
 	fotoHash := fmt.Sprintf("sha256_%d", time.Now().UnixNano())
 
 	// 3. Grava o registro de ponto

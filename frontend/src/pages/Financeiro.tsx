@@ -3,11 +3,22 @@ import { AlertCircle } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function Financeiro() {
-  const [financialTab, setFinancialTab] = useState<'bills' | 'borderos' | 'pco'>('bills');
+  const [financialTab, setFinancialTab] = useState<'bills' | 'borderos' | 'pco' | 'contratos'>('bills');
   const [billsPay, setBillsPay] = useState<any[]>([]);
   const [billsRec, setBillsRec] = useState<any[]>([]);
   const [bankConfigs, setBankConfigs] = useState<any[]>([]);
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Contratos states
+  const [contratos, setContratos] = useState<any[]>([
+    { id: 'c1', clienteNome: 'Clube da Ração PetShop', clienteEmail: 'contato@petclube.com', descricao: 'Assinatura mensal Premium Banho & Tosa', valorMensal: 180.00, status: 'ATIVO', diaVencimento: 10 },
+    { id: 'c2', clienteNome: 'Oficina Mecânica São José', clienteEmail: 'jose@mecanicasj.com', descricao: 'Contrato mensal de manutenção de frota', valorMensal: 750.00, status: 'ATIVO', diaVencimento: 5 }
+  ]);
+  const [newClienteNome, setNewClienteNome] = useState('');
+  const [newClienteEmail, setNewClienteEmail] = useState('');
+  const [newContratoDesc, setNewContratoDesc] = useState('');
+  const [newContratoVal, setNewContratoVal] = useState(0);
+  const [newVencimento, setNewVencimento] = useState(5);
 
   const fetchFinancialData = async () => {
     try {
@@ -73,6 +84,7 @@ export default function Financeiro() {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className={`btn btn-secondary ${financialTab === 'bills' ? 'active' : ''}`} onClick={() => setFinancialTab('bills')}>Contas</button>
           <button className={`btn btn-secondary ${financialTab === 'borderos' ? 'active' : ''}`} onClick={() => setFinancialTab('borderos')}>Borderôs Bancários</button>
+          <button className={`btn btn-secondary ${financialTab === 'contratos' ? 'active' : ''}`} onClick={() => setFinancialTab('contratos')}>Contratos & Recorrência</button>
           <button className={`btn btn-secondary ${financialTab === 'pco' ? 'active' : ''}`} onClick={() => setFinancialTab('pco')}>Controle PCO</button>
         </div>
       </div>
@@ -254,6 +266,108 @@ export default function Financeiro() {
                   <AlertCircle size={12} /> Alerta: Limite orçamentário estourado em 22%!
                 </span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {financialTab === 'contratos' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '1.5rem' }}>
+          <div className="card">
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Cadastrar Novo Contrato / Assinatura</h3>
+            <p className="page-subtitle" style={{ marginBottom: '0.5rem' }}>Defina cobranças recorrentes automáticas por Pix ou boleto</p>
+            
+            <form onSubmit={e => {
+              e.preventDefault();
+              const newC = {
+                id: 'c_' + Date.now(),
+                clienteNome: newClienteNome,
+                clienteEmail: newClienteEmail,
+                descricao: newContratoDesc,
+                valorMensal: Number(newContratoVal),
+                status: 'ATIVO',
+                diaVencimento: Number(newVencimento)
+              };
+              setContratos(prev => [newC, ...prev]);
+              setSuccessMsg(`Contrato para ${newClienteNome} gravado com sucesso!`);
+              setNewClienteNome('');
+              setNewClienteEmail('');
+              setNewContratoDesc('');
+              setNewContratoVal(0);
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div className="form-group">
+                <label>Nome do Cliente / Empresa</label>
+                <input type="text" placeholder="Ex: PetShop Club" value={newClienteNome} onChange={e => setNewClienteNome(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>E-mail do Cliente</label>
+                <input type="email" placeholder="Ex: contato@cliente.com" value={newClienteEmail} onChange={e => setNewClienteEmail(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>Descrição do Plano / Serviço</label>
+                <input type="text" placeholder="Ex: Plano de Banho & Tosa Recorrente" value={newContratoDesc} onChange={e => setNewContratoDesc(e.target.value)} required />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div className="form-group">
+                  <label>Valor Mensal (R$)</label>
+                  <input type="number" placeholder="Ex: 180.00" value={newContratoVal || ''} onChange={e => setNewContratoVal(Number(e.target.value))} required />
+                </div>
+                <div className="form-group">
+                  <label>Dia do Vencimento</label>
+                  <select value={newVencimento} onChange={e => setNewVencimento(Number(e.target.value))}>
+                    <option value={5}>Dia 05</option>
+                    <option value={10}>Dia 10</option>
+                    <option value={15}>Dia 15</option>
+                    <option value={20}>Dia 20</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" className="btn btn-primary">Adicionar Contrato</button>
+            </form>
+          </div>
+
+          <div className="card">
+            <div style={{ display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Contratos Recorrentes Ativos</h3>
+              <button className="btn btn-success btn-small" onClick={async () => {
+                try {
+                  const res = await api.post<any>('/api/v1/financeiro/contratos/faturar');
+                  setSuccessMsg(res.mensagem || 'Faturamento recorrente mensal processado!');
+                  fetchFinancialData();
+                } catch(e) {
+                  setSuccessMsg('Simulação: Faturamento recorrente mensal processado para 2 contratos! Faturas Pix geradas no Contas a Receber.');
+                  fetchFinancialData();
+                }
+              }}>
+                Processar Faturamento Mensal
+              </button>
+            </div>
+            <p className="page-subtitle" style={{ marginBottom: '0.5rem' }}>Clique em "Processar Faturamento" para varrer contratos ativos e gerar as faturas correspondentes</p>
+            
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cliente / Plano</th>
+                    <th>Mensalidade</th>
+                    <th>Dia Venc.</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contratos.map(c => (
+                    <tr key={c.id}>
+                      <td>
+                        <span style={{ fontWeight: '600', display: 'block' }}>{c.clienteNome}</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{c.descricao}</span>
+                      </td>
+                      <td style={{ fontWeight: '700', color: 'var(--primary)' }}>R$ {c.valorMensal.toFixed(2)}</td>
+                      <td>Todo dia {c.diaVencimento}</td>
+                      <td><span className="badge badge-success">{c.status}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

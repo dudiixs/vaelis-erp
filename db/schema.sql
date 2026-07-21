@@ -399,3 +399,59 @@ CREATE TABLE logs_auditoria_sistema (
     detalhes TEXT,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 34. Controle de Lotes e Validades (FEFO)
+CREATE TABLE produtos_lotes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    produto_grade_id UUID NOT NULL REFERENCES produtos_grade(id) ON DELETE CASCADE,
+    lote_codigo VARCHAR(100) NOT NULL,
+    quantidade INT NOT NULL DEFAULT 0,
+    data_validade DATE NOT NULL,
+    data_fabricacao DATE,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 35. Carteira de Cashback (CRM & Fidelização)
+CREATE TABLE fidelidade_cashback (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    empresa_id UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    cliente_cpf VARCHAR(11) NOT NULL,
+    saldo_acumulado NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_cpf_per_tenant UNIQUE (empresa_id, cliente_cpf)
+);
+
+-- 36. Agrupamento de Entregas & Roteirização (Logística)
+CREATE TABLE entregas_delivery (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    venda_id UUID NOT NULL REFERENCES vendas(id) ON DELETE CASCADE,
+    endereco_entrega VARCHAR(255) NOT NULL,
+    cep VARCHAR(8) NOT NULL,
+    bairro VARCHAR(100) NOT NULL,
+    status_entrega VARCHAR(30) NOT NULL DEFAULT 'AGUARDANDO_ROTA', -- 'AGUARDANDO_ROTA', 'ROTA_GERADA', 'EM_TRANSITO', 'ENTREGUE'
+    rota_ordem INT,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 37. Contratos e Cobrança Recorrente
+CREATE TABLE contratos_recorrentes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    empresa_id UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    cliente_nome VARCHAR(255) NOT NULL,
+    cliente_email VARCHAR(255),
+    cliente_cpf VARCHAR(11),
+    descricao VARCHAR(255) NOT NULL,
+    valor_mensal NUMERIC(10, 2) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'ATIVO', -- 'ATIVO', 'SUSPENSO', 'CANCELADO'
+    dia_vencimento INT NOT NULL DEFAULT 5,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 38. Integração de Canais de E-commerce (Omnichannel)
+CREATE TABLE marketplace_integracoes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    empresa_id UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+    plataforma VARCHAR(50) NOT NULL, -- 'SHOPEE', 'MERCADO_LIVRE', 'LOJA_INTEGRADA'
+    status VARCHAR(20) NOT NULL DEFAULT 'CONECTADO',
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

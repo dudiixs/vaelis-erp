@@ -17,6 +17,7 @@ import (
 	"erp/internal/modules/financeiro"
 	"erp/internal/modules/fiscal"
 	"erp/internal/modules/kds"
+	"erp/internal/modules/logistica"
 	"erp/internal/modules/master"
 	"erp/internal/modules/pdv"
 	"erp/internal/modules/rh"
@@ -46,6 +47,8 @@ func main() {
 	estoqueHandler := estoque.NewEstoqueHandler(pool)
 	rhHandler := rh.NewRHHandler(pool)
 	financeiroHandler := financeiro.NewFinanceiroHandler(pool)
+	contratosHandler := financeiro.NewContratosHandler(pool)
+	logisticaHandler := logistica.NewLogisticaHandler(pool)
 	fiscalHandler := fiscal.NewFiscalHandler(pool)
 	pdvHandler := pdv.NewPDVHandler(pool)
 	kdsHandler := kds.NewKDSHandler(pool)
@@ -150,6 +153,24 @@ func main() {
 	api.Get("/servicos/os", middleware.ValidarAcesso(pool, "ORDEM_SERVICO", "visualizar"), servicosHandler.ListOS)
 	api.Get("/servicos/os/:id", middleware.ValidarAcesso(pool, "ORDEM_SERVICO", "visualizar"), servicosHandler.GetOS)
 	api.Post("/servicos/os/:id/faturar", middleware.ValidarAcesso(pool, "ORDEM_SERVICO", "editar"), servicosHandler.FaturarOS)
+
+	// --- Módulo Recorrente ---
+	api.Post("/financeiro/contratos", middleware.ValidarAcesso(pool, "FINANCEIRO", "criar"), contratosHandler.CreateContrato)
+	api.Get("/financeiro/contratos", middleware.ValidarAcesso(pool, "FINANCEIRO", "visualizar"), contratosHandler.ListContratos)
+	api.Post("/financeiro/contratos/faturar", middleware.ValidarAcesso(pool, "FINANCEIRO", "editar"), contratosHandler.FaturarRecorrencia)
+
+	// --- Módulo Logística Roteirizada ---
+	api.Get("/logistica/entregas", logisticaHandler.ListDeliveries)
+	api.Post("/logistica/entregas/roteirizar", logisticaHandler.OptimizeRoute)
+
+	// --- Lotes e Omnichannel ---
+	api.Post("/estoque/lotes", middleware.ValidarAcesso(pool, "ESTOQUE", "criar"), estoqueHandler.CreateLote)
+	api.Get("/estoque/lotes/:produtoGradeId", middleware.ValidarAcesso(pool, "ESTOQUE", "visualizar"), estoqueHandler.GetLotes)
+	api.Post("/estoque/omnichannel/config", middleware.ValidarAcesso(pool, "GRADE_PRODUTOS", "editar"), estoqueHandler.UpdateOmnichannel)
+	api.Get("/estoque/omnichannel/config", middleware.ValidarAcesso(pool, "GRADE_PRODUTOS", "visualizar"), estoqueHandler.GetOmnichannel)
+
+	// --- Cashback Fidelidade ---
+	api.Get("/fidelidade/cashback/:cpf", pdvHandler.GetCashback)
 
 	// --- Painel Master da Software House ---
 	api.Put("/master/tenants/:id/licenca", masterHandler.UpdateTenantLicense)

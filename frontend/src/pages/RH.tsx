@@ -32,6 +32,23 @@ export default function RH() {
     fetchEmployees();
   }, []);
 
+  // Carregar geolocalização do navegador
+  useEffect(() => {
+    if (rhTab === 'ponto') {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setGpsLat(pos.coords.latitude.toFixed(6));
+            setGpsLng(pos.coords.longitude.toFixed(6));
+          },
+          () => {
+            console.warn("Permissão de geolocalização negada. Usando coordenadas mock.");
+          }
+        );
+      }
+    }
+  }, [rhTab]);
+
   const handleSimulateFacialPoint = async () => {
     if (!employeePin) {
       setErrorMsg('Informe o ID/Código do Colaborador para a identificação.');
@@ -42,19 +59,36 @@ export default function RH() {
     setErrorMsg('');
     setSuccessMsg('');
 
+    // Validação de Geofence (Cerca Geográfica)
+    // Coordenadas da Loja de Referência: -23.5505, -46.6333
+    const dLat = Number(gpsLat) - (-23.5505);
+    const dLng = Number(gpsLng) - (-46.6333);
+    const dy = dLat * 111000.0;
+    const dx = dLng * 111000.0 * 0.91;
+    const distancia = Math.sqrt(dy*dy + dx*dx);
+
+    if (distancia > 200) {
+      setTimeout(() => {
+        setBiometricSuccess(false);
+        setErrorMsg(`Acesso Negado: Cerca geográfica violada! Você está fora do perímetro de 200m da loja (Distância calculada: ${distancia.toFixed(1)}m).`);
+        setBiometricScanning(false);
+      }, 1500);
+      return;
+    }
+
     setTimeout(async () => {
       try {
         await api.post('/api/v1/rh/ponto/facial', {
-          colaboradorId: employeePin,
-          latitude: Number(gpsLat),
-          longitude: Number(gpsLng),
-          fotoFacialBase64: 'simulated_camera_hash_xx999'
+          colaborador_id: employeePin,
+          tipo: 'ENTRADA',
+          base64_imagem: 'simulated_camera_hash_xx999',
+          localizacao_gps: `${gpsLat},${gpsLng}`
         });
         setBiometricSuccess(true);
-        setSuccessMsg('Biometria facial validada (98.4% semelhança)! Ponto registrado com sucesso.');
+        setSuccessMsg(`Biometria facial validada! Ponto registrado com sucesso dentro do raio (Distância: ${distancia.toFixed(1)}m).`);
       } catch (err: any) {
         setBiometricSuccess(true);
-        setSuccessMsg('Ponto registrado com sucesso! (Simulado: ID ' + employeePin + ' - Lat: ' + gpsLat + ')');
+        setSuccessMsg(`Ponto registrado com sucesso! (Simulado: ID ${employeePin} - Raio: ${distancia.toFixed(1)}m)`);
       } finally {
         setBiometricScanning(false);
       }

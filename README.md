@@ -22,6 +22,7 @@ Um sistema ERP de alta performance, modular e multitenant desenvolvido em **Go**
    * Sistema de **Impersonation**: Suporte técnico pode assumir a conta de um tenant temporariamente com logs de auditoria detalhados.
 2. **Estoque & Compras**:
    * Grade de produtos (controle flexível de SKUs por tamanho e cor).
+   * **Controle por Lote e Validade (FEFO)**: Registro de lotes de produtos com datas de validade, sugerindo automaticamente saídas baseadas no primeiro a expirar para evitar desperdício.
    * Fluxo de Solicitação de Compras -> Orçamento de Fornecedores -> Pedido de Compras com alçadas de aprovação.
    * **Sugestão de Compra Inteligente**: Endpoint analisa estoques de segurança mínimos e gera sugestões de compra estimando custos financeiros.
 3. **Financeiro**:
@@ -34,15 +35,25 @@ Um sistema ERP de alta performance, modular e multitenant desenvolvido em **Go**
 
 ### 🧩 Add-ons de Nicho (Contratados Sob Demanda)
 1. **Varejo & Self-Checkout (`modulo_self_checkout`)**:
-   * Motor de PDV preparado para contingência offline. Sincroniza dados em SQLite local via pontes Wails e faz upload da fila de vendas rejeitando duplicidades via UUID.
+   * Motor de PDV preparado para contingência offline. Sincroniza dados em SQLite local e faz upload da fila de vendas.
+   * **Reconciliação CRDT**: Sincronização offline baseada em deltas de estoque relativos (PN-Counters) em vez de valores absolutos, evitando conflitos com edições simultâneas no Painel Web.
 2. **Fast-Food & KDS (`modulo_kds`)**:
    * Sistema de comandas e mesas integrado a telas de cozinha (KDS) via WebSockets.
    * Alertas de **SLA de preparo**: Itens com tempo de cozinha acima de 15 minutos são destacados.
 3. **Serviços & OS (`modulo_ordem_servico`)**:
    * Abertura de Ordens de Serviço (OS) com separação física de autopeças e mão de obra.
    * Integração de **Comissões**: Faturamento de OS gera automaticamente contas a pagar de 10% sobre a mão de obra para o técnico designado.
-4. **Ponto por Reconhecimento Facial (`modulo_ponto_facial`)**:
-   * Permite registro de batidas de jornada (ponto) via aplicativo mobile/tablet validando a semelhança facial do funcionário, registrando latitude/longitude GPS e gerando comprovantes digitais.
+4. **Ponto por Reconhecimento Facial & Geofencing (`modulo_ponto_facial`)**:
+   * Registro de batidas de jornada (ponto) validando a semelhança facial do funcionário.
+   * **Ponto Georreferenciado**: Integração com API de Geolocalização do navegador/celular para validar se a batida foi feita dentro do raio de tolerância (cerca geográfica de 200 metros) do endereço cadastrado da empresa.
+5. **E-commerce & Omnichannel**:
+   * Integração bidirecional com marketplaces (Shopee, Mercado Livre, etc.). A venda física no PDV atualiza o estoque instantaneamente nos e-commerces integrados.
+6. **CRM & Fidelização de Clientes (Cashback)**:
+   * Identificação de CPF na venda do caixa, com pontuações automáticas e resgate de Cashback para abatimento direto no total de compras futuras.
+7. **Logística & Delivery (Roteirização)**:
+   * Agrupamento inteligente de entregas geográficas pendentes (por CEP/Bairro) gerando rotas ordenadas otimizadas para os motoristas e links rápidos de rastreamento via WhatsApp.
+8. **Contratos e Cobrança Recorrente**:
+   * Gestão de assinaturas mensais ou contratos recorrentes com faturamento Pix/boleto automatizado que alimenta diretamente o Contas a Receber da empresa.
 
 ---
 

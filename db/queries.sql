@@ -621,3 +621,77 @@ INSERT INTO ponto_registros (
     $1, $2, $3, $4, $5, $6
 )
 RETURNING *;
+
+-- name: CreateProductLote :one
+INSERT INTO produtos_lotes (
+    produto_grade_id, lote_codigo, quantidade, data_validade, data_fabricacao
+) VALUES (
+    $1, $2, $3, $4, $5
+)
+RETURNING *;
+
+-- name: ListProductLotesFEFO :many
+SELECT * FROM produtos_lotes
+WHERE produto_grade_id = $1 AND quantidade > 0
+ORDER BY data_validade ASC;
+
+-- name: DecrementProductLoteQuantity :one
+UPDATE produtos_lotes
+SET quantidade = quantidade - $2
+WHERE id = $1
+RETURNING *;
+
+-- name: GetClientCashback :one
+SELECT * FROM fidelidade_cashback
+WHERE empresa_id = $1 AND cliente_cpf = $2;
+
+-- name: CreateOrUpdateCashback :one
+INSERT INTO fidelidade_cashback (
+    empresa_id, cliente_cpf, saldo_acumulado, atualizado_em
+) VALUES (
+    $1, $2, $3, CURRENT_TIMESTAMP
+)
+ON CONFLICT (empresa_id, cliente_cpf)
+DO UPDATE SET saldo_acumulado = $3, atualizado_em = CURRENT_TIMESTAMP
+RETURNING *;
+
+-- name: CreateDelivery :one
+INSERT INTO entregas_delivery (
+    venda_id, endereco_entrega, cep, bairro, status_entrega, rota_ordem
+) VALUES (
+    $1, $2, $3, $4, $5, $6
+)
+RETURNING *;
+
+-- name: ListDeliveries :many
+SELECT ed.*, v.total as venda_total 
+FROM entregas_delivery ed
+JOIN vendas v ON ed.venda_id = v.id
+WHERE v.empresa_id = $1
+ORDER BY ed.criado_em DESC;
+
+-- name: CreateContratoRecorrente :one
+INSERT INTO contratos_recorrentes (
+    empresa_id, cliente_nome, cliente_email, cliente_cpf, descricao, valor_mensal, status, dia_vencimento
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8
+)
+RETURNING *;
+
+-- name: ListContratosRecorrentes :many
+SELECT * FROM contratos_recorrentes
+WHERE empresa_id = $1
+ORDER BY criado_em DESC;
+
+-- name: CreateMarketplaceIntegration :one
+INSERT INTO marketplace_integracoes (
+    empresa_id, plataforma, status
+) VALUES (
+    $1, $2, $3
+)
+RETURNING *;
+
+-- name: ListMarketplaceIntegrations :many
+SELECT * FROM marketplace_integracoes
+WHERE empresa_id = $1
+ORDER BY criado_em DESC;

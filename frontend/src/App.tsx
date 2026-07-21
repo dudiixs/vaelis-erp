@@ -8,7 +8,9 @@ import {
   ShoppingCart, 
   Wrench, 
   LogOut, 
-  Key
+  Key,
+  Truck,
+  ShoppingBag
 } from 'lucide-react';
 import { api } from './services/api';
 
@@ -22,6 +24,8 @@ import KDS from './pages/KDS';
 import PDV from './pages/PDV';
 import Servicos from './pages/Servicos';
 import Master from './pages/Master';
+import Logistica from './pages/Logistica';
+import Omnichannel from './pages/Omnichannel';
 
 interface UserInfo {
   id: string;
@@ -146,6 +150,16 @@ export default function App() {
             </button>
           </li>
           <li>
+            <button className={`menu-item ${activeTab === 'omnichannel' ? 'active' : ''}`} onClick={() => setActiveTab('omnichannel')}>
+              <ShoppingBag size={18} /> Canais Omnichannel
+            </button>
+          </li>
+          <li>
+            <button className={`menu-item ${activeTab === 'logistica' ? 'active' : ''}`} onClick={() => setActiveTab('logistica')}>
+              <Truck size={18} /> Roteirização & Delivery
+            </button>
+          </li>
+          <li>
             <button className={`menu-item ${activeTab === 'master' ? 'active' : ''}`} onClick={() => setActiveTab('master')}>
               <Key size={18} /> Software House
             </button>
@@ -182,6 +196,8 @@ export default function App() {
         {activeTab === 'kds' && <KDS />}
         {activeTab === 'pdv' && <PDV />}
         {activeTab === 'servicos' && <Servicos />}
+        {activeTab === 'logistica' && <Logistica />}
+        {activeTab === 'omnichannel' && <Omnichannel />}
         {activeTab === 'master' && (
           <Master 
             onImpersonateStart={handleImpersonateStart}

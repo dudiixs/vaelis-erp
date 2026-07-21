@@ -12,12 +12,23 @@ interface Product {
 }
 
 export default function Estoque() {
-  const [inventoryTab, setInventoryTab] = useState<'catalog' | 'suggestions'>('catalog');
+  const [inventoryTab, setInventoryTab] = useState<'catalog' | 'suggestions' | 'batches'>('catalog');
   const [products, setProducts] = useState<Product[]>([]);
   const [inventoryAlerts, setInventoryAlerts] = useState<any[]>([]);
   const [purchaseSuggestions, setPurchaseSuggestions] = useState<any[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Batch states
+  const [batches, setBatches] = useState<any[]>([
+    { id: 'b1', produto: 'Camiseta Dry-Fit Azul (M)', loteCodigo: 'LOT-992A', quantidade: 25, dataValidade: '2026-08-02', dataFabricacao: '2026-07-02' },
+    { id: 'b2', produto: 'Boné Esportivo Nylon Preto (UN)', loteCodigo: 'LOT-992B', quantidade: 15, dataValidade: '2026-09-15', dataFabricacao: '2026-07-05' },
+    { id: 'b3', produto: 'Tênis Running Ultralight Vermelho (40)', loteCodigo: 'LOT-993C', quantidade: 8, dataValidade: '2026-07-28', dataFabricacao: '2026-06-01' }
+  ]);
+  const [batchProductGradeId, setBatchProductGradeId] = useState('');
+  const [batchCode, setBatchCode] = useState('');
+  const [batchQty, setBatchQty] = useState(0);
+  const [batchExpiry, setBatchExpiry] = useState('');
 
   // Form states
   const [newProdName, setNewProdName] = useState('');
@@ -124,6 +135,7 @@ export default function Estoque() {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className={`btn btn-secondary ${inventoryTab === 'catalog' ? 'active' : ''}`} onClick={() => setInventoryTab('catalog')}>Catálogo</button>
+          <button className={`btn btn-secondary ${inventoryTab === 'batches' ? 'active' : ''}`} onClick={() => setInventoryTab('batches')}>Lotes & Validades (FEFO)</button>
           <button className={`btn btn-secondary ${inventoryTab === 'suggestions' ? 'active' : ''}`} onClick={() => setInventoryTab('suggestions')}>Reposição & Inteligência</button>
         </div>
       </div>
@@ -222,7 +234,9 @@ export default function Estoque() {
             </div>
           </div>
         </div>
-      ) : (
+      ) : null}
+
+      {inventoryTab === 'suggestions' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1.5rem' }}>
           <div className="card">
             <h3 style={{ fontSize: '1.1rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -279,6 +293,98 @@ export default function Estoque() {
                 <span>Nenhuma análise carregada. Clique no botão ao lado.</span>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {inventoryTab === 'batches' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1.5rem' }}>
+          <div className="card">
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Registrar Lote de Produção</h3>
+            <p className="page-subtitle" style={{ marginBottom: '0.75rem' }}>Entrada de lotes com validade. O sistema prioriza a saída do lote que vence primeiro (FEFO).</p>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const selectedProd = products.find(p => p.id === batchProductGradeId);
+              const newBatch = {
+                id: 'b_' + Date.now(),
+                produto: selectedProd ? selectedProd.nome : 'Produto Avulso',
+                loteCodigo: batchCode,
+                quantidade: Number(batchQty),
+                dataValidade: batchExpiry,
+                dataFabricacao: new Date().toISOString().split('T')[0]
+              };
+              setBatches(prev => [...prev, newBatch]);
+              setSuccessMsg(`Lote ${batchCode} adicionado ao estoque!`);
+              setBatchCode('');
+              setBatchQty(0);
+              setBatchExpiry('');
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div className="form-group">
+                <label>Produto</label>
+                <select value={batchProductGradeId} onChange={e => setBatchProductGradeId(e.target.value)} required>
+                  <option value="">Selecione...</option>
+                  {products.map(p => (
+                    <option key={p.id} value={p.id}>{p.nome}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Código do Lote</label>
+                <input type="text" placeholder="Ex: LOT-2026A" value={batchCode} onChange={e => setBatchCode(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>Quantidade do Lote</label>
+                <input type="number" placeholder="Ex: 50" value={batchQty || ''} onChange={e => setBatchQty(Number(e.target.value))} required />
+              </div>
+              <div className="form-group">
+                <label>Data de Validade</label>
+                <input type="date" value={batchExpiry} onChange={e => setBatchExpiry(e.target.value)} required />
+              </div>
+              <button type="submit" className="btn btn-primary">Adicionar Lote</button>
+            </form>
+          </div>
+
+          <div className="card">
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              Fila de Validades Ativas (FEFO Order)
+            </h3>
+            <p className="page-subtitle" style={{ marginBottom: '0.5rem' }}>Sugestões automáticas de picking baseadas nas datas de vencimento mais próximas</p>
+            
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lote</th>
+                    <th>Produto</th>
+                    <th>Estoque</th>
+                    <th>Validade</th>
+                    <th>Alerta FEFO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...batches].sort((a,b) => new Date(a.dataValidade).getTime() - new Date(b.dataValidade).getTime()).map(b => {
+                    const daysLeft = Math.ceil((new Date(b.dataValidade).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                    const isUrgent = daysLeft < 30;
+                    return (
+                      <tr key={b.id} style={{ borderLeft: isUrgent ? '3px solid var(--error)' : 'none' }}>
+                        <td style={{ fontWeight: '600' }}><code>{b.loteCodigo}</code></td>
+                        <td>{b.produto}</td>
+                        <td>{b.quantidade} Un.</td>
+                        <td>{b.dataValidade}</td>
+                        <td>
+                          {isUrgent ? (
+                            <span className="badge badge-error">SAÍDA CRÍTICA ({daysLeft} dias!)</span>
+                          ) : (
+                            <span className="badge badge-success">Estável ({daysLeft} dias)</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

@@ -1,0 +1,24 @@
+# Binaries
+bin/
+*.exe
+*.test
+*.prof
+
+# Environments and Secrets
+.env
+secrets/
+
+# IDE / Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Operating System
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
